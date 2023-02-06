@@ -40,18 +40,23 @@ function result = transform_to_time_domain(signal, info)
   endfor
 endfunction
 
-function spec = generate_spectrogram(signal_in_freq_domain)
+function [spec, x_range, y_range] = generate_spectrogram(signal_in_freq_domain, info)
+  N = size(signal_in_freq_domain)(1);
   for i = 1:size(signal_in_freq_domain)(2)
     block = signal_in_freq_domain(:, i);
-    N = length(block);
     spec(i, 1:N/2) = abs(block(1:N/2));
   endfor
+  x_range = linspace(0, info.TotalSamples/info.SampleRate, size(spec)(1));
+  y_range = linspace(0, info.SampleRate/2, N/2);
 endfunction
 
-function [x, y] = calculate_spectrogram_ranges(info, spec)
-  N = size(spec)(2);
-  x = linspace(0, info.TotalSamples/info.SampleRate, size(spec)(1));
-  y = linspace(0, info.SampleRate/2, N/2);
+function signal_in_freq_domain = apply_tranformation(t0, t1, f, signal_in_freq_domain, info)
+  N = size(signal_in_freq_domain)(1);
+  i0 = round(t0 * info.SampleRate / N * 2);
+  i1 = round(t1 * info.SampleRate / N * 2);
+  for i = i0:i1
+    signal_in_freq_domain(:, i) = f(signal_in_freq_domain(:, i));
+  endfor
 endfunction
 
 file = "sample5.wav";
@@ -63,8 +68,8 @@ N = 2048 * 2; # window size
 t0 = clock();
 
 freq = transform_to_freq_domain(y, N, info);
-spec = generate_spectrogram(freq);
-result = transform_to_time_domain(freq, info);
+freq2 = apply_tranformation(1.0, 2.0, @(y) y ./ 3, freq, info);
+result = transform_to_time_domain(freq2, info);
 
 etime(clock(), t0)
 
@@ -85,7 +90,7 @@ plot(t, result);
 figure(2);
 #subplot(1, 3, 3, 'spec;');
 
-[x, y] = calculate_spectrogram_ranges(info, spec);
+[spec, x, y] = generate_spectrogram(freq2, info);
 imagesc(x, y, power(spec, 0.5)');
 colorbar();
 ylabel ("f");
