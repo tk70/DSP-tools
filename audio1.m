@@ -79,18 +79,22 @@ function Y = move_freq(y, f_src, f_dst, info)
   k0 = f_to_k(f_src, N, info);
   k1 = f_to_k(f_dst, N, info);
 
-  x = 1:1:N;
+  x = 1:1:N; # original indexing space
   xi = x;
+
+  m = 2; # margin
   xi(k1) = k0;
-  xi(k1-4:k1) = linspace(xi(k1-4), xi(k1), 5);
-  xi(k1:k1+4) = linspace(xi(k1), xi(k1+4), 5);
+  xi(k0-m:k1) = linspace(k0-m, k0, k1-k0+m+1);
+  xi(k1:k1+m) = linspace(k0, k1+m, m+1);
+
+  # apply the same index space alteration, but reversed on the symmetric spectrum side
   delta = xi(1:N/2) - x(1:N/2);
   delta = flip(delta);
   xi(N/2+1:end) = xi(N/2+1:end) + delta;
   Y = interp1(x, y, xi, "pchip");
 endfunction
 
-file = "sample5.wav";
+file = "sample4.wav";
 info = audioinfo(file);
 [y, fs] = audioread(file);
 
@@ -99,11 +103,12 @@ N = 2048 * 2; # window size
 t0 = clock();
 
 freq = transform_to_freq_domain(y, N, info);
-g = @(y) move_freq(y, 524, 553, info);
-freq2 = apply_tranformation(2.5, 3.5, g, freq, info);
+freq2 = freq;
+g = @(y) move_freq(y, 524, 555, info);
+#freq2 = apply_tranformation(3.5, 5.0, g, freq2, info);
 
-g = @(y) move_freq(y, 1050, 1180, info);
-freq2 = apply_tranformation(2.5, 3.5, g, freq2, info);
+g = @(y) move_freq(y, 1050, 1130, info);
+#freq2 = apply_tranformation(3.5, 5.0, g, freq2, info);
 
 result = transform_to_time_domain(freq2, info);
 
